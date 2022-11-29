@@ -1,0 +1,7 @@
+pipeline:
+  test:
+    image: rust:1.65.0
+    commands:
+      - rustup component add clippy
+      - cargo clippy
+      - cargo test

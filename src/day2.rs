@@ -15,13 +15,13 @@ pub fn input_generator(input: &str) -> Vec<(i32, i32)> {
 pub fn solve_part1(input: &[(i32, i32)]) -> i32 {
     input
         .iter()
-        .map(|(him, me)| {
-            (match (him - me).rem_euclid(3) {
+        .map(|(him, me)|
+            match (him - me).rem_euclid(3) {
                 0 => 3,
                 1 => 0,
                 _ => 6,
-            }) + me + 1
-        })
+            } + me + 1
+        )
         .sum()
 }
 
@@ -29,13 +29,13 @@ pub fn solve_part1(input: &[(i32, i32)]) -> i32 {
 pub fn solve_part2(input: &[(i32, i32)]) -> i32 {
     input
         .iter()
-        .map(|(him, outcome)| {
-            (match outcome {
+        .map(|(him, outcome)|
+            match outcome {
                 0 => *him - 1,
                 1 => *him,
                 _ => *him + 1,
-            }) .rem_euclid(3) + 1 + outcome * 3
-        })
+            }.rem_euclid(3) + 1 + outcome * 3
+        )
         .sum()
 }
 

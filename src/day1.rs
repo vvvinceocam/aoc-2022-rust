@@ -6,7 +6,7 @@ pub fn input_generator(input: &str) -> Vec<Vec<u32>> {
         .split("\n\n")
         .map(|elf| {
             elf.split('\n')
-                .map(|cal| cal.parse::<u32>().unwrap())
+                .map(|cal| cal.parse().unwrap())
                 .collect()
         })
         .collect()
@@ -30,7 +30,21 @@ pub fn solve_part2(input: &[Vec<u32>]) -> u32 {
 mod tests {
     use super::{input_generator, solve_part1, solve_part2};
 
-    static INPUT: &str = "1000\n2000\n3000\n\n4000\n\n5000\n6000\n\n7000\n8000\n9000\n\n10000";
+    static INPUT: &str = "\
+1000
+2000
+3000
+
+4000
+
+5000
+6000
+
+7000
+8000
+9000
+
+10000";
 
     #[test]
     fn input_generator_builds_vec() {

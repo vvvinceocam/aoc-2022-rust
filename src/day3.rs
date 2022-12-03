@@ -52,7 +52,8 @@ fn priority(item: u8) -> u32 {
 mod tests {
     use super::{input_generator, priority, solve_part1, solve_part2};
 
-    static INPUT: &str = "vJrwpWtwJgWrhcsFMMfFFhFp
+    static INPUT: &str = "\
+vJrwpWtwJgWrhcsFMMfFFhFp
 jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL
 PmmdzqPrVvPwwTWBwg
 wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn

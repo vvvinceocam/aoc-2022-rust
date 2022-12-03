@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::hash::Hash;
+use std::ops::Deref;
 
 use aoc_runner_derive::{aoc, aoc_generator};
 
@@ -15,7 +16,7 @@ pub fn input_generator(input: &str) -> Vec<Vec<u8>> {
 pub fn solve_part1(input: &[Vec<u8>]) -> u32 {
     input
         .iter()
-        .map(|bag| priority(*common(bag.chunks(bag.len() / 2))))
+        .map(|bag| priority(common(bag.chunks(bag.len() / 2))))
         .sum()
 }
 
@@ -23,20 +24,20 @@ pub fn solve_part1(input: &[Vec<u8>]) -> u32 {
 pub fn solve_part2(input: &[Vec<u8>]) -> u32 {
     input
         .chunks(3)
-        .map(|bags| priority(*common(bags.iter().map(|b| b.as_slice()))))
+        .map(|bags| priority(common(bags.iter())))
         .sum()
 }
 
-fn common<'a, I, T>(mut iterator: I) -> &'a T
+/// Given an iterator of iterable collections, find the common element of those collections.
+fn common<'a, I, C, T>(mut iterator: I) -> T
     where
-        I: Iterator<Item=&'a [T]>,
-        T: Clone + Eq + Hash,
+        I: Iterator<Item=C>,
+        C: IntoIterator<Item=&'a T>,
+        T: Clone + Eq + Hash + 'a,
 {
-    let init = iterator.next().unwrap().iter().collect::<HashSet<_>>();
-    iterator.fold(
-        init,
-        |acc, elems| &acc & &elems.iter().collect(),
-    ).iter().next().unwrap()
+    let init = iterator.next().unwrap().into_iter().collect::<HashSet<_>>();
+    let set = iterator.fold(init, |acc, elems| &acc & &elems.into_iter().collect());
+    set.iter().next().unwrap().deref().clone()
 }
 
 fn priority(item: u8) -> u32 {

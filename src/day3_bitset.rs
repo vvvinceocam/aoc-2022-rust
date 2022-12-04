@@ -25,15 +25,15 @@ fn common<'a, I>(iterator: I) -> u8
     where
         I: Iterator<Item=&'a [u8]>,
 {
-    extract_item(iterator.map(into_bitset).fold(u128::MAX, u128::bitand))
+    extract_item(iterator.map(into_bitset).fold(u64::MAX, u64::bitand))
 }
 
-fn into_bitset(items: &[u8]) -> u128 {
-    items.iter().fold(0, |acc, item| acc | (1 << (*item as u128 - 1)))
+fn into_bitset(items: &[u8]) -> u64 {
+    items.iter().fold(0, |acc, item| acc | 1 << (*item - b'A'))
 }
 
-fn extract_item(bitset: u128) -> u8 {
-    (0..127).find(|i| (bitset >> *i) == 1).unwrap() as u8 + 1
+fn extract_item(bitset: u64) -> u8 {
+    (0..127).find(|i| (bitset >> *i) == 1).unwrap() as u8 + b'A'
 }
 
 #[cfg(test)]
@@ -60,6 +60,6 @@ CrZsJsPPZsGzwwsLwLmpwMDw";
 
     #[test]
     fn reversible_bitset() {
-        assert_eq!(extract_item(into_bitset(&[8])), 8)
+        assert_eq!(extract_item(into_bitset(&[b'x'])), b'x')
     }
 }

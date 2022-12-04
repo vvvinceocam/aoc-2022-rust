@@ -40,7 +40,7 @@ fn common<'a, I, C, T>(mut iterator: I) -> T
     set.iter().next().unwrap().deref().clone()
 }
 
-fn priority(item: u8) -> u32 {
+pub fn priority(item: u8) -> u32 {
     if item <= b'Z' {
         item - b'A' + 27
     } else {

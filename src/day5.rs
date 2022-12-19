@@ -96,7 +96,7 @@ mod tests {
                 Instruction { count: 1, from: 1, to: 2 },
             ]
         );
-        assert_eq!(input_generator(dbg!(INPUT)), expect);
+        assert_eq!(input_generator(INPUT), expect);
     }
 
     #[test]

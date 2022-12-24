@@ -1,43 +1,6 @@
 use std::collections::HashMap;
-use std::str::FromStr;
 
 use aoc_runner_derive::{aoc, aoc_generator};
-
-#[derive(Debug, Eq, PartialEq)]
-enum TerminalLine {
-    ChangeDirectory { name: String },
-    List,
-    File {
-        name: String,
-        size: usize,
-    },
-    Directory {
-        name: String,
-    },
-}
-
-impl FromStr for TerminalLine {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use TerminalLine::*;
-        if let Some(folder) = s.strip_prefix("$ cd ") {
-            Ok(ChangeDirectory { name: folder.to_string() })
-        } else if s == "$ ls" {
-            Ok(List)
-        } else if let Some(folder) = s.strip_prefix("dir ") {
-            Ok(Directory { name: folder.to_string() })
-        } else {
-            let (size, name) = s.split_once(' ').unwrap();
-            Ok(
-                File {
-                    name: name.to_string(),
-                    size: size.parse().unwrap(),
-                }
-            )
-        }
-    }
-}
 
 #[derive(Debug, Eq, PartialEq)]
 enum Node {
@@ -50,24 +13,14 @@ enum Node {
 }
 
 impl Node {
-    fn insert(&mut self, name: String, node: usize) {
-        match self {
-            Self::Directory { children, } => {
-                children.insert(name, node);
-            }
-            _ => {
-                panic!("Can't insert on File")
-            }
-        }
-    }
 
-    fn get(&self, name: &String) -> usize {
+    fn get(&self, name: &str) -> usize {
         match self {
             Self::Directory { children, } => {
                 *children.get(name).unwrap()
             }
             _ => {
-                panic!("Can't insert on File")
+                panic!("Can't get node")
             }
         }
     }
@@ -79,61 +32,85 @@ struct FileSystem {
 }
 
 impl FileSystem {
-    pub fn from_terminal_lines<I>(lines: I) -> Self
+    fn insert_node(&mut self, node: Node) -> usize {
+        self.nodes.push(node);
+        self.nodes.len() - 1
+    }
+
+    fn link(&mut self, parent_id: usize, name: String, id: usize) {
+        if let Node::Directory { ref mut children } = self.nodes.get_mut(parent_id).expect("missing node") {
+            children.insert(name, id);
+        } else {
+            panic!("not a dir");
+        }
+    }
+
+    pub fn create_dir(&mut self, parent_id: usize, name: &str) -> usize {
+        let dir = Node::Directory {
+            children: HashMap::new(),
+        };
+        let id = self.insert_node(dir);
+        self.link(parent_id, name.to_string(), id);
+        id
+    }
+
+    pub fn create_file(&mut self, parent_id: usize, name: &str, size: usize) -> usize {
+        let file = Node::File {
+            size
+        };
+        let id = self.insert_node(file);
+        self.link(parent_id, name.to_string(), id);
+        id
+    }
+
+    pub fn new() -> Self {
+        Self {
+            nodes: vec![
+                Node::Directory {
+                    children: HashMap::new(),
+                }
+            ]
+        }
+    }
+
+    pub fn from_terminal_output<'a, I>(lines: I) -> Self
         where
-            I: Iterator<Item=TerminalLine>
+            I: Iterator<Item=&'a str>
     {
-        let mut nodes = Vec::new();
-
-        nodes.push(
-            Node::Directory {
-                children: HashMap::new(),
-            }
-        );
-
-        let mut parents: Vec<usize> = vec![];
+        let mut fs = FileSystem::new();
+        let mut path: Vec<usize> = vec![];
+        let mut parent = 0;
 
         for line in lines {
-            use TerminalLine::*;
-
-            match line {
-                List => {}
-                ChangeDirectory { name } => {
-                    match name.as_str() {
-                        "/" => {
-                            parents.clear();
-                        }
-                        ".." => {
-                            parents.pop();
-                        }
-                        _ => {
-                            parents.push(nodes[*parents.last().unwrap_or(&0)].get(&name));
-                        }
-                    };
+            match line.split_whitespace().collect::<Vec<_>>().as_slice() {
+                ["$", "cd", "/"] => {
+                    path.clear();
+                    parent = 0;
                 }
-                Directory { .. } | File { .. } => {
-                    let (name, node) = match line {
-                        Directory { name } => (
-                            name,
-                            Node::Directory {
-                                children: HashMap::new(),
-                            }),
-                        File { name, size } => (
-                            name,
-                            Node::File { size }
-                        ),
-                        _ => unreachable!(),
-                    };
-                    nodes.push(node);
-                    let id = nodes.len() - 1;
-                    nodes.get_mut(*parents.last().unwrap_or(&0)).unwrap().insert(name, id);
+                ["$", "cd", ".."] => {
+                    parent = path.pop().unwrap();
+                }
+                ["$", "cd", name] => {
+                    path.push(parent);
+                    parent = fs.nodes[parent].get(name);
+                }
+                ["$", "ls"] => {
+                    // do nothing
+                }
+                ["dir", name] => {
+                    fs.create_dir(parent, name);
+                }
+                [size, name] => {
+                    let size = size.parse().unwrap();
+                    fs.create_file(parent, name, size);
+                }
+                _ => {
+                    unreachable!();
                 }
             }
         }
 
-        Self {
-            nodes
-        }
+        fs
     }
 
     fn traverse_dirs(&self, node: usize)  -> (usize, usize)
@@ -182,7 +159,7 @@ impl FileSystem {
 
 #[aoc_generator(day7)]
 fn input_generator(input: &str) -> FileSystem {
-    FileSystem::from_terminal_lines(input.lines().map(|line| line.parse().unwrap()))
+    FileSystem::from_terminal_output(input.lines())
 }
 
 #[aoc(day7, part1)]
@@ -199,8 +176,6 @@ fn solve_part2(fs: &FileSystem) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
     use super::{FileSystem, Node};
 
     use super::{input_generator, solve_part1, solve_part2};

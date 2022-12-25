@@ -136,17 +136,13 @@ fn input_generator(input: &str) -> FileSystem {
 #[aoc(day7, part1)]
 fn solve_part1(fs: &FileSystem) -> usize {
     let on_file = |size| (0, size);
-    let on_dir = |children| {
-        let mut acc = 0;
-        let mut size = 0;
-        for (subacc, subsize) in children {
-            acc += subacc;
-            size += subsize;
-        }
+    let on_dir = |children: Vec<(usize, usize)>| {
+        let (acc, size) = children.iter().fold((0, 0), |acc, child| (acc.0 + child.0, acc.1 + child.1));
         if size <= 100_000 {
-            acc += size;
+            (acc + size, size)
+        } else {
+            (acc, size)
         }
-        (acc, size)
     };
     fs.bottom_up_traversal(0, &on_file, &on_dir).0
 }
@@ -157,19 +153,15 @@ fn solve_part2(fs: &FileSystem) -> usize {
     let threshold = 30_000_000 - (70_000_000 - total);
 
     let on_file = |size| (0, size);
-    let on_dir = |children| {
-        let mut size = 0;
-        let mut acc = usize::MAX;
-        for (subacc, subsize) in children {
-            size += subsize;
-            if subacc < acc && subacc >= threshold {
-                acc = subacc;
-            }
-        }
-        if size >= threshold && size < acc {
-            acc = size;
-        }
-        (acc, size)
+    let on_dir = |children: Vec<_>| {
+        let size = children.iter().map(|(_, size)| size).sum();
+        let candidate = *children.iter()
+            .map(|(candidate, _)| candidate)
+            .chain(&[size])
+            .filter(|candidate| **candidate >= threshold)
+            .min()
+            .unwrap_or(&usize::MAX);
+        (candidate, size)
     };
     fs.bottom_up_traversal(0, &on_file, &on_dir).0
 }

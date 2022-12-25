@@ -13,7 +13,6 @@ enum Node {
 }
 
 impl Node {
-
     fn get(&self, name: &str) -> usize {
         match self {
             Self::Directory { children, } => {
@@ -113,45 +112,17 @@ impl FileSystem {
         fs
     }
 
-    fn traverse_dirs(&self, node: usize)  -> (usize, usize)
+    pub fn bottom_up_traversal<F1, F2, T>(&self, node: usize, on_file: &F1, on_dir: &F2) -> T
+        where
+            F1: Fn(usize) -> T,
+            F2: Fn(Vec<T>) -> T,
     {
         match self.nodes.get(node).unwrap() {
-            Node::File {size} => (0, *size),
-            Node::Directory {children} => {
-                let mut acc = 0;
-                let mut size = 0;
-                for index in children.values() {
-                    let (subacc, subsize) = self.traverse_dirs(*index);
-                    acc += subacc;
-                    size += subsize;
-                }
-                if size <= 100_000 {
-                    acc += size;
-                }
-                (acc, size)
+            Node::File { size } => {
+                on_file(*size)
             }
-        }
-    }
-
-
-    fn select_folder(&self, node: usize, threshold: usize)  -> (usize, usize)
-    {
-        match self.nodes.get(node).unwrap() {
-            Node::File {size} => (usize::MAX, *size),
-            Node::Directory {children} => {
-                let mut size = 0;
-                let mut acc = usize::MAX;
-                for index in children.values() {
-                    let (subacc, subsize) = self.select_folder(*index, threshold);
-                    size += subsize;
-                    if subacc < acc && subacc >= threshold {
-                        acc = subacc;
-                    }
-                }
-                if size >= threshold && size < acc {
-                    acc = size;
-                }
-                dbg!((acc, size))
+            Node::Directory { children } => {
+                on_dir(children.values().map(|node| self.bottom_up_traversal(*node, on_file, on_dir)).collect())
             }
         }
     }
@@ -164,20 +135,48 @@ fn input_generator(input: &str) -> FileSystem {
 
 #[aoc(day7, part1)]
 fn solve_part1(fs: &FileSystem) -> usize {
-    fs.traverse_dirs(0).0
+    let on_file = |size| (0, size);
+    let on_dir = |children| {
+        let mut acc = 0;
+        let mut size = 0;
+        for (subacc, subsize) in children {
+            acc += subacc;
+            size += subsize;
+        }
+        if size <= 100_000 {
+            acc += size;
+        }
+        (acc, size)
+    };
+    fs.bottom_up_traversal(0, &on_file, &on_dir).0
 }
 
 #[aoc(day7, part2)]
 fn solve_part2(fs: &FileSystem) -> usize {
-    let total = fs.traverse_dirs(0).1;
+    let total = fs.bottom_up_traversal(0, &|size| size, &|children| children.iter().sum());
     let threshold = 30_000_000 - (70_000_000 - total);
-    fs.select_folder(0, threshold).0
+
+    let on_file = |size| (0, size);
+    let on_dir = |children| {
+        let mut size = 0;
+        let mut acc = usize::MAX;
+        for (subacc, subsize) in children {
+            size += subsize;
+            if subacc < acc && subacc >= threshold {
+                acc = subacc;
+            }
+        }
+        if size >= threshold && size < acc {
+            acc = size;
+        }
+        (acc, size)
+    };
+    fs.bottom_up_traversal(0, &on_file, &on_dir).0
 }
 
 #[cfg(test)]
 mod tests {
     use super::{FileSystem, Node};
-
     use super::{input_generator, solve_part1, solve_part2};
 
     static INPUT: &str = "\

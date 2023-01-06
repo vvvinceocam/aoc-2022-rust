@@ -1,3 +1,3 @@
 fileignoreconfig:
 - filename: Cargo.lock
-  checksum: 25ea07b8ae69540323080a91ad37354ff363e065cf5a7e0c4a3a5ae3bf0e4949
+  checksum: 502163e33b45a7620a84435ad90a6aaf458b110571df04cf2b8e73d485c83e0f
